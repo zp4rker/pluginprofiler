@@ -2,6 +2,7 @@ package com.zp4rker.pluginprofiler
 
 import org.fusesource.jansi.AnsiConsole
 import org.fusesource.jansi.AnsiRenderer
+import org.json.JSONObject
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.net.URLClassLoader
@@ -31,10 +32,11 @@ object PluginProfiler {
                 when (arg) {
                     "command", "commands", "c" -> extras.add("c")
                     "permisison", "permissions", "p" -> extras.add("p")
+                    "json" -> extras.add("j")
                 }
             }
         }
-        extras.forEach { if (it == "c") printCommands(obj) else printPermissions(obj) }
+        extras.forEach { if (it == "c") printCommands(obj) else if (it == "p") printPermissions(obj) else printJSON(obj) }
     }
 
     private fun printOverview(obj: Map<String, Any>) {
@@ -69,5 +71,20 @@ object PluginProfiler {
 
         println(AnsiRenderer.render(output.joinToString("\n")))
     }
+
+    private fun printJSON(obj: Map<String, Any>) {
+        val out = linkedMapOf<String, Any>()
+
+        for (entry in obj.entries) {
+            if (entry.value !is Map<*, *>) out[entry.key] = entry.value
+            else {
+                out[entry.key] = mapToObject(entry.value as LinkedHashMap<*, *>)
+            }
+        }
+
+        println("\n${JSONObject(out).toString(2)}\n")
+    }
+
+    private fun mapToObject(obj: LinkedHashMap<*, *>): Any = if (obj.values.all { it is Map<*, *> }) obj.entries.map { mapOf(it.key to it.value) } else obj
 
 }
